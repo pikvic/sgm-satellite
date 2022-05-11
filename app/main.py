@@ -8,12 +8,27 @@ from app.schema import TaskResult, TaskPostResult, NoaaTaskParams
 from app.queue import get_queue, get_redis, get_jobs_in_registries, create_task
 from app.tasks import run_noaa
 
+from fastapi.middleware.cors import CORSMiddleware
 
+origins = [
+    "http://localhost.tiangolo.com",
+    "https://localhost.tiangolo.com",
+    "http://localhost",
+    "http://localhost:8080",
+]
 
 app = FastAPI(
     title='Вычислительный узел "Обработка спутниковых данных"',
     description="Данный вычислительный узел содержит API для различных процедур обработки спутниковых данных",
     version="0.1"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 if not config.DOWNLOAD_DIR.exists():
