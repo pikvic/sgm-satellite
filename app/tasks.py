@@ -10,13 +10,14 @@ from pyproj import Transformer, CRS
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 import zipfile
 from app.schema import NoaaRegionEnum
+from httpx._exceptions import RemoteProtocolError
 
 def clear_files_for_job(job_id):
-    path = config.UPLOAD_DIR / job_id
-    if path.exists():
-        for f in path.iterdir():
-            f.unlink()
-        path.rmdir()
+    # path = config.UPLOAD_DIR / job_id
+    # if path.exists():
+    #     for f in path.iterdir():
+    #         f.unlink()
+    #     path.rmdir()
     path = config.DOWNLOAD_DIR / job_id
     if path.exists():
         for f in path.iterdir():
@@ -65,9 +66,9 @@ def dsystem_info(task_id):
     response = httpx.post(config.URL_DSYSTEM, headers=headers, content=command, auth=config.AUTH, verify=False)
     return response.json()
 
-def dsystem_start_noaa(file_a0, config):
+def dsystem_start_noaa(file_a0, region):
     headers = {"Content-Type": "application/json"}
-    command = f'[ "start", "term.proj.irods", "{file_a0}", "{config}" ]'
+    command = f'[ "start", "term.proj.irods", "{file_a0}", "{region}" ]'
     response = httpx.post(config.URL_DSYSTEM, headers=headers, content=command, auth=config.AUTH, verify=False)
     return response.json()
 
@@ -168,7 +169,7 @@ def run_noaa(params):
     results = []
     job_id = params['job_id']
     date = str(params['date'])
-    region =  params['region']
+    region =  params['region'].value
     root = get_or_create_dir(config.DOWNLOAD_DIR, job_id)
 
     # validate params
@@ -185,14 +186,31 @@ def run_noaa(params):
         if dsystem_result['RC'] != 0:
             return error("Ошибка постановки задачи в dsystem")
         dsystem_task_id = dsystem_result['VALUE']
-        
+        with open('log.txt', 'a') as f:
+            f.write(f'{dsystem_task_id}\n')
+        status = 'None'
         count = 0
-        while dsystem_info(dsystem_task_id)['status'] != 'FINISHED' or count < 100:
-            sleep(2)
+        while status != 'FINISHED' and count < 60:
+            sleep(5)
+            try:
+                status = dsystem_info(dsystem_task_id)['status']
+            except Exception as e:
+                pass
             count += 1
-        if count == 100:
-            return error("Ошибка времени ожидания - больше 100 попыток по 2 секунды")
+        if count == 10:
+            return error("Ошибка времени ожидания схемы - больше 60 попыток по 5 секунд")
         url, file = get_result_url_file(dsystem_task_id)
+        count = 0
+        while not url and count < 10:
+            sleep(5)
+            try:
+                url, file = get_result_url_file(dsystem_task_id)
+            except Exception as e:
+                pass
+            count += 1
+        if count == 10:
+            return error("Ошибка времени ожидания файла - больше 10 попыток по 5 секунд")
+        
         irods_download(url, root / file)
         geotiff_file = make_geotiff(root, file)
         results.append(geotiff_file.as_posix())

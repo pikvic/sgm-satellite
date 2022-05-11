@@ -13,6 +13,6 @@ ADD ./requirements.txt /usr/src/app/requirements.txt
 RUN apt-get update
 RUN apt-get install python3 python3-pip build-essential libssl-dev libffi-dev python3-dev gdal-bin libgdal-dev python3-rasterio -y
 RUN pip install -r requirements.txt
-RUN pip install pyproj
+RUN pip install pyproj aiofiles
 # copy project
 COPY . /usr/src/app

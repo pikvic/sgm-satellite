@@ -94,6 +94,7 @@ def get_result(job_id):
     response_model=TaskPostResult
 )
 def noaa_post(params: NoaaTaskParams, request: Request):
+    print(params.dict()['region'].value)
     res = create_task(run_noaa, params.dict())
     res['url'] = request.url_for('get_result', job_id=res['job_id'])
     return TaskPostResult(**res)
