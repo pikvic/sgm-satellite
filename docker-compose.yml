@@ -5,7 +5,7 @@ services:
   web:
     build: .
     image: web
-    container_name: web
+    container_name: backend
     ports:
       - 8080:5000
     environment: 

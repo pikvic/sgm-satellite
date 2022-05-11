@@ -167,7 +167,7 @@ def run_noaa(params):
     # common
     results = []
     job_id = params['job_id']
-    date = params['date']
+    date = str(params['date'])
     region =  params['region']
     root = get_or_create_dir(config.DOWNLOAD_DIR, job_id)
 
