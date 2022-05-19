@@ -188,28 +188,28 @@ def run_noaa(params):
         dsystem_task_id = dsystem_result['VALUE']
         with open('log.txt', 'a') as f:
             f.write(f'{dsystem_task_id}\n')
-        status = 'None'
-        count = 0
-        while status != 'FINISHED' and count < 60:
-            sleep(5)
-            try:
-                status = dsystem_info(dsystem_task_id)['status']
-            except Exception as e:
-                pass
-            count += 1
-        if count == 10:
-            return error("Ошибка времени ожидания схемы - больше 60 попыток по 5 секунд")
+        # status = 'None'
+        # count = 0
+        # while status != 'FINISHED' and count < 60:
+        #     sleep(5)
+        #     try:
+        #         status = dsystem_info(dsystem_task_id)['status']
+        #     except Exception as e:
+        #         pass
+        #     count += 1
+        # if count == 10:
+        #     return error("Ошибка времени ожидания схемы - больше 60 попыток по 5 секунд")
         url, file = get_result_url_file(dsystem_task_id)
         count = 0
-        while not url and count < 10:
+        while not url and count < 20:
             sleep(5)
             try:
                 url, file = get_result_url_file(dsystem_task_id)
             except Exception as e:
                 pass
             count += 1
-        if count == 10:
-            return error("Ошибка времени ожидания файла - больше 10 попыток по 5 секунд")
+        if count == 20:
+            return error("Ошибка времени ожидания файла - больше 20 попыток по 5 секунд")
         
         irods_download(url, root / file)
         geotiff_file = make_geotiff(root, file)
