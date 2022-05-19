@@ -187,7 +187,7 @@ def run_noaa(params):
         files = get_a0_files(date)
         if not files:
             return error("На указанную дату нет снимков")
-        dsystem_result = dsystem_start_noaa(random.choice(files)], region)
+        dsystem_result = dsystem_start_noaa(random.choice(files), region)
         if dsystem_result['RC'] != 0:
             return error("Ошибка постановки задачи в dsystem")
         dsystem_task_id = dsystem_result['VALUE']
