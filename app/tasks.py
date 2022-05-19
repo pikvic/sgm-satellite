@@ -83,7 +83,7 @@ def get_a0_files(date):
 def get_result_url_file(task_id):
     url, file = None, None
     response = httpx.get(f'{config.URL_NOAA_RESULT}/{task_id}', auth=config.AUTH)
-    if response.ok:
+    if response.is_success:
         soup = BeautifulSoup(response.text, 'html.parser')
         file = soup.select_one('.extension-zip > td > a')
         if not file:
