@@ -81,10 +81,15 @@ def get_a0_files(date):
     return links
 
 def get_result_url_file(task_id):
+    url, file = None, None
     response = httpx.get(f'{config.URL_NOAA_RESULT}/{task_id}', auth=config.AUTH)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    file = soup.select_one('.extension-zip > td > a')["href"]
-    url = f'{config.URL_NOAA_RESULT}/{task_id}/{file}'
+    if response.ok:
+        soup = BeautifulSoup(response.text, 'html.parser')
+        file = soup.select_one('.extension-zip > td > a')
+        if not file:
+            return url, file
+        file = file["href"]
+        url = f'{config.URL_NOAA_RESULT}/{task_id}/{file}'
     return url, file
 
 def irods_download(url, path):
