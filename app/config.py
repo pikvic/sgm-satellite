@@ -4,7 +4,7 @@ from pathlib import Path
 ROOT =  Path()
 #UPLOAD_DIR = ROOT / 'static' / 'upload'
 DOWNLOAD_DIR = ROOT / 'static' / 'download'
-RESULT_TTL = 600
+RESULT_TTL = 3600
 REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
 USER = os.getenv('USER', 'qwerty')
 PASSWORD = os.getenv('PASSWORD', 'qwerty')
