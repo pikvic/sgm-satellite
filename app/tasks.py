@@ -11,6 +11,7 @@ from rasterio.warp import calculate_default_transform, reproject, Resampling
 import zipfile
 from app.schema import NoaaRegionEnum
 from httpx._exceptions import RemoteProtocolError
+import random
 
 def clear_files_for_job(job_id):
     # path = config.UPLOAD_DIR / job_id
@@ -186,39 +187,38 @@ def run_noaa(params):
         files = get_a0_files(date)
         if not files:
             return error("На указанную дату нет снимков")
-        for file_a0 in files:
-            dsystem_result = dsystem_start_noaa(file_a0, region)
-            if dsystem_result['RC'] != 0:
-                return error("Ошибка постановки задачи в dsystem")
-            dsystem_task_id = dsystem_result['VALUE']
-            with open('log.txt', 'a') as f:
-                f.write(f'{dsystem_task_id}\n')
-            # status = 'None'
-            # count = 0
-            # while status != 'FINISHED' and count < 60:
-            #     sleep(5)
-            #     try:
-            #         status = dsystem_info(dsystem_task_id)['status']
-            #     except Exception as e:
-            #         pass
-            #     count += 1
-            # if count == 10:
-            #     return error("Ошибка времени ожидания схемы - больше 60 попыток по 5 секунд")
-            url, file = get_result_url_file(dsystem_task_id)
-            count = 0
-            while not url and count < 20:
-                sleep(5)
-                try:
-                    url, file = get_result_url_file(dsystem_task_id)
-                except Exception as e:
-                    pass
-                count += 1
-            if count == 20:
-                return error("Ошибка времени ожидания файла - больше 20 попыток по 5 секунд")
-            
-            irods_download(url, root / file)
-            geotiff_file = make_geotiff(root, file)
-            results.append(geotiff_file.as_posix())
+        dsystem_result = dsystem_start_noaa(random.choice(files)], region)
+        if dsystem_result['RC'] != 0:
+            return error("Ошибка постановки задачи в dsystem")
+        dsystem_task_id = dsystem_result['VALUE']
+        with open('log.txt', 'a') as f:
+            f.write(f'{dsystem_task_id}\n')
+        # status = 'None'
+        # count = 0
+        # while status != 'FINISHED' and count < 60:
+        #     sleep(5)
+        #     try:
+        #         status = dsystem_info(dsystem_task_id)['status']
+        #     except Exception as e:
+        #         pass
+        #     count += 1
+        # if count == 10:
+        #     return error("Ошибка времени ожидания схемы - больше 60 попыток по 5 секунд")
+        url, file = get_result_url_file(dsystem_task_id)
+        count = 0
+        while not url and count < 20:
+            sleep(5)
+            try:
+                url, file = get_result_url_file(dsystem_task_id)
+            except Exception as e:
+                pass
+            count += 1
+        if count == 20:
+            return error("Ошибка времени ожидания файла - больше 20 попыток по 5 секунд")
+        
+        irods_download(url, root / file)
+        geotiff_file = make_geotiff(root, file)
+        results.append(geotiff_file.as_posix())
     except Exception as e:
         return error(f"Неизвестная ошибка: {e}")
     return ready(results)
