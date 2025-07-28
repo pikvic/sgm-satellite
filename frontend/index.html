@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>ГИС Приложение</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="node_modules/ol/ol.css">
+    <style>
+        #map {
+            width: 100%;
+            height: 90vh;
+        }
+        .panel {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        .card-layer {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .card-layer:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row p-3 bg-light border-bottom">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" id="search-input" class="form-control" placeholder="Поиск места...">
+                    <button id="search-btn" class="btn btn-primary"><i class="bi bi-search"></i></button>
+                </div>
+            </div>
+            <div class="col-md-8 d-flex justify-content-end gap-2">
+                <button id="satellite-search-btn" class="btn btn-outline-primary"><i class="bi bi-satellite"></i> Поиск снимков</button>
+                <button id="add-image-btn" class="btn btn-outline-success"><i class="bi bi-image"></i> Добавить изображение</button>
+                <button id="add-csv-btn" class="btn btn-outline-info"><i class="bi bi-table"></i> Загрузить CSV</button>
+            </div>
+        </div>
+        
+        <div class="row g-3">
+            <!-- Левая панель -->
+            <div class="col-md-3">
+                <div class="panel">
+                    <h5><i class="bi bi-search"></i> Результаты поиска</h5>
+                    <div id="search-results"></div>
+                </div>
+            </div>
+            
+            <!-- Карта -->
+            <div class="col-md-6 position-relative">
+                <div id="map"></div>
+            </div>
+            
+            <!-- Правая панель -->
+            <div class="col-md-3">
+                <div class="panel mb-3">
+                    <h5><i class="bi bi-layers"></i> Активные слои</h5>
+                    <div id="layer-list"></div>
+                </div>
+                <div class="panel">
+                    <h5><i class="bi bi-clock-history"></i> История действий</h5>
+                    <div id="action-log"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Добавить перед закрывающим тегом </body> -->
+<!-- Модальное окно для загрузки изображения -->
+<div class="modal fade" id="image-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Добавить изображение</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="image-form">
+          <div class="mb-3">
+            <label class="form-label">Файл изображения</label>
+            <input type="file" class="form-control" id="image-file" accept="image/*" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Система координат</label>
+            <select class="form-select" id="image-projection">
+              <option value="EPSG:4326">WGS 84 (EPSG:4326)</option>
+              <option value="EPSG:3857">Web Mercator (EPSG:3857)</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Координаты углов (x1,y1,x2,y2)</label>
+            <input type="text" class="form-control" placeholder="minX, minY, maxX, maxY" id="image-extent" required>
+            <div class="form-text">Например: 37.5,55.5,38.0,56.0</div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" id="confirm-image">Добавить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно для загрузки CSV -->
+<div class="modal fade" id="csv-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Загрузить CSV данные</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="csv-form">
+          <div class="mb-3">
+            <label class="form-label">CSV файл</label>
+            <input type="file" class="form-control" id="csv-file" accept=".csv" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Столбец с долготой/X</label>
+            <input type="text" class="form-control" id="lon-column" placeholder="lon" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Столбец с широтой/Y</label>
+            <input type="text" class="form-control" id="lat-column" placeholder="lat" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Столбец для размера точки (опционально)</label>
+            <input type="text" class="form-control" id="size-column" placeholder="size">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Столбец для цвета точки (опционально)</label>
+            <input type="text" class="form-control" id="color-column" placeholder="color">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-primary" id="confirm-csv">Добавить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

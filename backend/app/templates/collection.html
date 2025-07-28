@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Collection
+{% endblock title %}
+
+{% block script %}
+    <script src="https://cdn.jsdelivr.net/npm/ol@v10.5.0/dist/ol.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.5.0/ol.css">
+
+    <style>
+    #map {
+        width: 100%;
+        height: 400px;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    .form-group {
+        margin-bottom: 15px;
+    }
+    .coordinates-group {
+        display: flex;
+        gap: 10px;
+    }
+    .coordinates-group .form-control {
+        flex: 1;
+    }
+    .map-instructions {
+        font-size: 0.9em;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    </style>
+{% endblock script %}
+
+{% block content %}
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <h1>Коллекция {{ collection.name }}</h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <a href="/collections">Назад к коллекциям</a>
+            </div>
+        </div>
+         <form id="searchForm" class="mb-4" method="post" action="/collections/{{ collection.name }}/results">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="startDate" class="form-label">Дата начала</label>
+                        <input type="date" class="form-control" id="startDate" name="start" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="endDate" class="form-label">Дата окончания</label>
+                        <input type="date" class="form-control" id="endDate" name="end" required>
+                    </div>
+                </div>
+            </div>
+            
+            <h5 class="mt-4">Регион поиска</h5>
+            <p class="map-instructions">Задайте регион либо вручную координатами, либо нарисовав прямоугольник на карте</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Широта (мин, макс)</label>
+                        <div class="coordinates-group">
+                            <input type="number" class="form-control" id="minLat" name="lat1" placeholder="мин широта" step="0.0001" min="-90" max="90">
+                            <input type="number" class="form-control" id="maxLat" name="lat2" placeholder="макс широта" step="0.0001" min="-90" max="90">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label">Долгота (мин, макс)</label>
+                        <div class="coordinates-group">
+                            <input type="number" class="form-control" id="minLon" name="lon1" placeholder="мин долгота" step="0.0001" min="-180" max="180">
+                            <input type="number" class="form-control" id="maxLon" name="lon2" placeholder="макс долгота" step="0.0001" min="-180" max="180">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="map"></div>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-outline-secondary" id="clearDrawing">
+                    Очистить прямоугольник
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    Найти снимки
+                </button>
+            </div>
+        </form>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default dates (today and 30 days ago)
+            const today = new Date();
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            
+            document.getElementById('startDate').valueAsDate = thirtyDaysAgo;
+            document.getElementById('endDate').valueAsDate = today;
+            
+            // Initialize the map
+            const map = new ol.Map({
+                target: 'map',
+                layers: [
+                    new ol.layer.Tile({
+                        source: new ol.source.OSM()
+                    })
+                ],
+                view: new ol.View({
+                    center: ol.proj.fromLonLat([37.6178, 55.7517]), // Center on Moscow
+                    zoom: 4
+                })
+            });
+            
+            // Variables for drawing interaction
+            let drawInteraction;
+            let drawnFeature = null;
+            
+            // Add drawing functionality
+            function addDrawInteraction() {
+                drawInteraction = new ol.interaction.Draw({
+                    type: 'Circle',
+                    geometryFunction: ol.interaction.Draw.createBox()
+                });
+                
+                drawInteraction.on('drawend', function(evt) {
+                    // Remove previous feature if exists
+                    if (drawnFeature) {
+                        map.removeLayer(drawnFeature);
+                    }
+                    
+                    const feature = evt.feature;
+                    const geometry = feature.getGeometry();
+                    const extent = geometry.getExtent();
+                    
+                    // Convert coordinates from map projection to lon/lat
+                    const minCoord = ol.proj.transform(
+                        [extent[0], extent[1]],
+                        map.getView().getProjection(),
+                        'EPSG:4326'
+                    );
+                    const maxCoord = ol.proj.transform(
+                        [extent[2], extent[3]],
+                        map.getView().getProjection(),
+                        'EPSG:4326'
+                    );
+                    
+                    // Update form fields
+                    document.getElementById('minLon').value = minCoord[0].toFixed(4);
+                    document.getElementById('minLat').value = minCoord[1].toFixed(4);
+                    document.getElementById('maxLon').value = maxCoord[0].toFixed(4);
+                    document.getElementById('maxLat').value = maxCoord[1].toFixed(4);
+                    
+                    // Style and keep the feature on the map
+                    feature.setStyle(new ol.style.Style({
+                        stroke: new ol.style.Stroke({
+                            color: [0, 119, 204, 1],
+                            width: 2
+                        }),
+                        fill: new ol.style.Fill({
+                            color: [0, 119, 204, 0.2]
+                        })
+                    }));
+                    
+                    const vectorLayer = new ol.layer.Vector({
+                        source: new ol.source.Vector({
+                            features: [feature]
+                        })
+                    });
+                    
+                    map.addLayer(vectorLayer);
+                    drawnFeature = vectorLayer;
+                    
+                    // Remove the draw interaction after drawing
+                    map.removeInteraction(drawInteraction);
+                });
+                
+                map.addInteraction(drawInteraction);
+            }
+            
+            // Button to start drawing
+            document.getElementById('map').addEventListener('click', function() {
+                if (!drawInteraction) {
+                    addDrawInteraction();
+                }
+            });
+            
+            // Button to clear drawing
+            document.getElementById('clearDrawing').addEventListener('click', function() {
+                if (drawnFeature) {
+                    map.removeLayer(drawnFeature);
+                    drawnFeature = null;
+                }
+                
+                document.getElementById('minLon').value = '';
+                document.getElementById('minLat').value = '';
+                document.getElementById('maxLon').value = '';
+                document.getElementById('maxLat').value = '';
+                
+                if (drawInteraction) {
+                    map.removeInteraction(drawInteraction);
+                    drawInteraction = null;
+                }
+            });
+
+        });
+    </script>
+{% endblock content %}

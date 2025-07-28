@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Results
+{% endblock title %}
+
+{% block content %}
+    <div class="container">
+
+        <div class="row">
+            <div class="col">
+                <h1>Результаты поиска</h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <a href="/collections/{{ name }}">Новый поиск</a>
+            </div>
+        </div>
+        {% for item in results %}
+        <div class="row pt-5">
+            <div class="col-3">{{ item.id }}</div>
+            <div class="col"><img src="{{ item.url }}" alt="" height="200px"></div>
+        </div>
+        {% endfor %}
+
+    </div>
+{% endblock content %}

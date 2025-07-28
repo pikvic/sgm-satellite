@@ -1,0 +1,21 @@
+{
+  "name": "sgm-satellite-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^7.0.4"
+  },
+  "dependencies": {
+    "@popperjs/core": "^2.11.8",
+    "axios": "^1.10.0",
+    "bootstrap": "^5.3.7",
+    "ol": "^10.6.1",
+    "papaparse": "^5.5.3"
+  }
+}

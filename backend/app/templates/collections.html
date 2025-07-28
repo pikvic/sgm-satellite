@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Collections
+{% endblock title %}
+
+{% block content %}
+    <div class="container">
+
+        <div class="row">
+            <div class="col">
+                <h1>Collections</h1>
+            </div>
+        </div>
+        {% for collection in collections %}
+        <div class="row pt-5">
+            <div class="col-3">Коллекция</div>
+            <div class="col">{{ collection.name }}</div>
+        </div>
+        <div class="row">
+            <div class="col-3">Описание</div>
+            <div class="col">{{ collection.description }}</div>
+        </div>
+        <div class="row">
+            <div class="col-3">Производитель</div>
+            <div class="col">{{ collection.provider }}</div>
+        </div>
+        <div class="row">
+            <div class="col-3">Источник</div>
+            <div class="col">{{ collection.source }}</div>
+        </div>
+        <div class="row">
+            <div class="col-3"><a href="/collections/{{ collection.name }}">Перейти</a></div>
+            <div class="col"></div>
+        </div>
+        
+        {% endfor %}
+
+    </div>
+{% endblock content %}
